@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Bukit Bintang</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    /* Set the map to take up the full screen */
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .legend-color {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background: red;"></div> Restaurant</div>
+    <div class="legend-item"><div class="legend-color" style="background: blue;"></div> Cafe</div>
+    <div class="legend-item"><div class="legend-color" style="background: green;"></div> Place to Visit</div>
+  </div>
+
+  <script>
+    let map;
+    let infowindow;
+
+    function initMap() {
+      // Coordinates for Bukit Bintang
+      const bukitBintang = new google.maps.LatLng(3.1466, 101.7111);
+
+      infowindow = new google.maps.InfoWindow();
+
+      // Initialize the map
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: bukitBintang,
+        zoom: 12, // Zoomed out enough to see a 15km radius
+      });
+
+      // The types of places we want to search for
+      const placeTypes = ['restaurant', 'cafe', 'tourist_attraction'];
+      const service = new google.maps.places.PlacesService(map);
+
+      // Loop through each type and perform a nearby search
+      placeTypes.forEach(type => {
+        const request = {
+          location: bukitBintang,
+          radius: 15000, // 15km in meters
+          type: type
+        };
+
+        service.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            for (let i = 0; i < results.length; i++) {
+              createMarker(results[i], type);
+            }
+          }
+        });
+      });
+    }
+
+    function createMarker(place, type) {
+      if (!place.geometry || !place.geometry.location) return;
+
+      // Assign different colored pins based on the place type
+      let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // Default: Restaurant
+      if (type === 'cafe') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+      if (type === 'tourist_attraction') iconUrl = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+
+      const marker = new google.maps.Marker({
+        map: map,
+        position: place.geometry.location,
+        title: place.name,
+        icon: iconUrl
+      });
+
+      // Show place details when a pin is clicked
+      google.maps.event.addListener(marker, "click", () => {
+        const content = `
+          <div style="max-width: 250px;">
+            <h3 style="margin: 0 0 5px 0;">${place.name}</h3>
+            <p style="margin: 0 0 5px 0; font-size: 14px;"><strong>Rating:</strong> ${place.rating || 'N/A'} ⭐</p>
+            <p style="margin: 0; font-size: 12px; color: #555;">${place.vicinity}</p>
+          </div>
+        `;
+        infowindow.setContent(content);
+        infowindow.open(map, marker);
+      });
+    }
+  </script>
+
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDJBycEJvtk7Qg5gZa7fz7PyG7vm5hRVdg&libraries=places&callback=initMap">
+  </script>
+
+</body>
+</html>
